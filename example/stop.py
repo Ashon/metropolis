@@ -12,24 +12,20 @@ import settings
 logging.basicConfig(format=settings.LOG_FORMAT, level=logging.INFO)
 
 
-async def publish(loop, name, body):
+async def stop(loop):
     nats = await get_connection(settings, loop)
-    logging.info(f"=> [name={name}][body={body}]")
-    response = await nats.request(name, body, timeout=60)
-    logging.info(f"<= [response={response.data.decode()}]")
-    # await nats.publish('worker', b'stop')
+    await nats.publish(settings.WORKER_NAME, b'STOP')
 
     await nats.close()
 
 
-def main(name, body):
+def main():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    loop.run_until_complete(publish(loop, name, body))
+    loop.run_until_complete(stop(loop))
     loop.close()
 
 
 if __name__ == "__main__":
-    while 1:
-        main('foo', b'hello')
+    main()

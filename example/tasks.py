@@ -1,7 +1,7 @@
-import random
 import time
 
 
 def mytask(data):
-    time.sleep(random.random() * 3)
+    # long running task
+    time.sleep(30)
     return data[::-1]
