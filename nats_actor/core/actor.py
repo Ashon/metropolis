@@ -61,11 +61,13 @@ async def get_connection(conf, loop):
 
 
 def get_worker_handler(queue):
-    async def handle_worker(msg):
+    async def handle_worker_signal(msg):
         worker_message = msg.data.decode()
+        logging.debug(f'Got worker signal [signal={worker_message}]')
+
         await queue.put_nowait(worker_message)
 
-    return handle_worker
+    return handle_worker_signal
 
 
 def generate_runner(conf, queue):
@@ -96,7 +98,6 @@ def generate_runner(conf, queue):
         signal = WORKER_CONTROL_SIGNAL_START
         while signal != WORKER_CONTROL_SIGNAL_STOP:
             signal = await queue.get()
-            logging.debug(f'Got signal [signal={signal}]')
 
         # Gracefully unsubscribe the subscription
         logging.debug('Drain subscriptions')
@@ -115,9 +116,8 @@ def start_worker(conf):
     if conf.UVLOOP_ENABLED:
         uvloop.install()
 
-    logging.debug('Init worker - Create eventloop')
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    logging.debug('Init worker - Prepare eventloop')
+    loop = asyncio.get_event_loop()
 
     logging.debug('Init worker - Generate worker')
     queue = asyncio.Queue()
