@@ -9,6 +9,7 @@ from nats.aio.client import Client
 from nats_actor.core.utils import get_module
 
 
+WORKER_CONTROL_SIGNAL_START = 'START'
 WORKER_CONTROL_SIGNAL_STOP = 'STOP'
 
 
@@ -52,11 +53,11 @@ async def get_connection(conf, loop):
 
 
 def get_worker_handler(queue):
-    async def cb(msg):
+    async def handle_worker(msg):
         worker_message = msg.data.decode()
         await queue.put_nowait(worker_message)
 
-    return cb
+    return handle_worker
 
 
 def generate_runner(conf, queue):
@@ -83,15 +84,10 @@ def generate_runner(conf, queue):
                 f'[task={task_fn.__name__}]'
             ))
 
-        while 1:
-            # logging.debug(f'Sleep for {conf.HEARTBEAT_INTERVAL} secs')
-            # await asyncio.sleep(conf.HEARTBEAT_INTERVAL)
-
-            # Wait for stop signal
-            message = await queue.get()
-            if message == WORKER_CONTROL_SIGNAL_STOP:
-                logging.debug(f'Got kill signal')
-                break
+        # wait for stop signal
+        signal = WORKER_CONTROL_SIGNAL_START
+        while signal != WORKER_CONTROL_SIGNAL_STOP:
+            signal = await queue.get()
 
         # Gracefully unsubscribe the subscription
         logging.debug('Drain subscriptions')
