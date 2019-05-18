@@ -6,12 +6,15 @@ from contextlib import suppress
 import uvloop
 from nats.aio.client import Client
 
+from nats_actor.core.utils import get_module
 
-WORKER_CONTROL_SIGNAL_STOP = 'stop'
+
+WORKER_CONTROL_SIGNAL_STOP = 'STOP'
 
 
 def set_logger(conf):
-    logging.basicConfig(format=conf.LOG_FORMAT, level=conf.LOG_LEVEL)
+    log_level = getattr(logging, conf.LOG_LEVEL, 'WARNING')
+    logging.basicConfig(format=conf.LOG_FORMAT, level=log_level)
 
 
 def get_callback(nats, task_fn):
@@ -66,7 +69,8 @@ def generate_runner(conf, queue):
 
         # Register tasks
         for task_spec in conf.TASKS:
-            callback = get_callback(nats, task_spec['task'])
+            _, task_fn = get_module(task_spec['task'])
+            callback = get_callback(nats, task_fn)
 
             subscription_id = await nats.subscribe(
                 task_spec['subject'], queue=task_spec['queue'], cb=callback)
@@ -76,7 +80,7 @@ def generate_runner(conf, queue):
                 f'[subscription_id={subscription_id}]'
                 f'[subject={task_spec["subject"]}]'
                 f'[queue={task_spec["queue"]}]'
-                f'[task={task_spec["task"].__name__}]'
+                f'[task={task_fn.__name__}]'
             ))
 
         while 1:
@@ -136,9 +140,3 @@ def start_worker(conf):
     finally:
         logging.info('Stop worker - close eventloop')
         loop.close()
-
-
-if __name__ == '__main__':
-    import settings
-
-    start_worker(settings)

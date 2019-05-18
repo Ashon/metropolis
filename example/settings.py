@@ -1,4 +1,3 @@
-import logging
 
 # eventloop settings
 UVLOOP_ENABLED = True
@@ -12,7 +11,7 @@ WORKER_NAME = 'worker'
 HEARTBEAT_INTERVAL = 5
 
 # logger settings
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = 'DEBUG'
 LOG_FORMAT = (
     '[%(asctime)s]'
     '[%(process)d/%(processName)s]'
@@ -21,14 +20,9 @@ LOG_FORMAT = (
     ' %(message)s'
 )
 
-
-def mytask(data):
-    return data[::-1]
-
-
 # task settings
 TASKS = [{
     'subject': 'foo',
     'queue': 'worker',
-    'task': mytask
+    'task': 'example.tasks.mytask'
 }]
