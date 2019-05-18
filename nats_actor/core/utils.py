@@ -1,4 +1,6 @@
+import logging
 import importlib
+import signal
 
 
 def get_module(module_path):
@@ -8,3 +10,27 @@ def get_module(module_path):
     child = getattr(module, child_name)
 
     return module, child
+
+
+class InterruptBumper(object):
+    def __init__(self, attempts):
+        self.attempts = attempts
+
+    def __enter__(self):
+        self.signal_received = ()
+        self.old_handler = signal.signal(signal.SIGINT, self.handler)
+
+    def handler(self, sig, frame):
+        self.signal_received = (sig, frame)
+
+        self.attempts -= 1
+        logging.warn(f'Bumping interrupts. [remains={self.attempts}]')
+
+        if not self.attempts:
+            logging.warn('max attempts reached stop.')
+            self.old_handler(*self.signal_received)
+
+    def __exit__(self, type, value, traceback):
+        signal.signal(signal.SIGINT, self.old_handler)
+        if self.signal_received:
+            self.old_handler(*self.signal_received)

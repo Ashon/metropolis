@@ -7,6 +7,7 @@ import uvloop
 from nats.aio.client import Client
 
 from nats_actor.core.utils import get_module
+from nats_actor.core.utils import InterruptBumper
 
 
 WORKER_CONTROL_SIGNAL_START = 'START'
@@ -20,27 +21,34 @@ def set_logger(conf):
 
 def get_callback(nats, task_fn):
     async def execute(msg):
+        if nats.is_draining:
+            logging.debug('Connection is draining')
+            raise Exception('draining')
+
         logging.info((
             'Received message. '
             f'[subject={msg.subject}][fn={task_fn.__name__}]'
             f'[from={msg.reply}]'
         ))
 
-        now = time.perf_counter()
-        data = msg.data.decode()
-        ret = task_fn(data)
-        elapsed = (time.perf_counter() - now) * 1000
+        try:
+            with InterruptBumper(attempts=3):
+                now = time.perf_counter()
+                data = msg.data.decode()
+                ret = task_fn(data)
+                elapsed = (time.perf_counter() - now) * 1000
 
-        await nats.publish(msg.reply, ret.encode())
+                await nats.publish(msg.reply, ret.encode())
 
-        logging.info((
-            'Task finished. '
-            f'[subject={msg.subject}][fn={task_fn.__name__}]'
-            f'[elapsed={elapsed:.3f}ms]'
-        ))
+                logging.info((
+                    'Task finished. '
+                    f'[subject={msg.subject}][fn={task_fn.__name__}]'
+                    f'[elapsed={elapsed:.3f}ms]'
+                ))
 
-        if nats.is_draining:
-            logging.debug("Connection is draining")
+        except KeyboardInterrupt:
+            await nats.publish(msg.reply, 'KeyboardInterrupt'.encode())
+            raise
 
     return execute
 
@@ -88,6 +96,7 @@ def generate_runner(conf, queue):
         signal = WORKER_CONTROL_SIGNAL_START
         while signal != WORKER_CONTROL_SIGNAL_STOP:
             signal = await queue.get()
+            logging.debug(f'Got signal [signal={signal}]')
 
         # Gracefully unsubscribe the subscription
         logging.debug('Drain subscriptions')
