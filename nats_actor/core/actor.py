@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import signal
 import time
 from contextlib import suppress
 
@@ -60,6 +61,13 @@ async def get_connection(conf, loop):
     return nats
 
 
+def get_stop_handler(loop, queue):
+    def stop_worker(*args, **kwargs):
+        queue.put_nowait(WORKER_CONTROL_SIGNAL_STOP)
+
+    return stop_worker
+
+
 def get_worker_handler(queue):
     async def handle_worker_signal(msg):
         worker_message = msg.data.decode()
@@ -103,10 +111,22 @@ def generate_runner(conf, queue):
         logging.debug('Drain subscriptions')
         await nats.flush()
         await nats.drain()
+        await nats.close()
 
         return True
 
     return run_forever
+
+
+def stop_eventloop_tasks(loop):
+    pending_tasks = asyncio.Task.all_tasks()
+    for task in pending_tasks:
+        logging.debug((
+            f'[task={task.__class__.__name__}:{task.__hash__()}]'
+        ))
+        with suppress(asyncio.CancelledError):
+            loop.run_until_complete(task)
+            logging.debug(f'{task.__hash__()} [done={task.done()}]')
 
 
 def start_worker(conf):
@@ -123,25 +143,21 @@ def start_worker(conf):
     queue = asyncio.Queue()
     runner = generate_runner(conf, queue)
 
+    logging.debug('Init worker - Set signal handler')
+    stop_worker = get_stop_handler(loop, queue)
+    signal.signal(signal.SIGTERM, stop_worker)
+
     try:
         logging.info('Start worker')
         loop.run_until_complete(runner(loop))
 
     except KeyboardInterrupt:
         logging.debug(f'Stop worker - send stop message to worker')
-        queue.put_nowait(WORKER_CONTROL_SIGNAL_STOP)
-
-        logging.info('Stop worker - cancel pending tasks')
-        pending_tasks = asyncio.Task.all_tasks()
-        for task in pending_tasks:
-            logging.debug((
-                'Stop worker - cancel '
-                f'[task={task.__class__.__name__}:{task.__hash__()}]'
-            ))
-
-            with suppress(asyncio.CancelledError):
-                loop.run_until_complete(task)
+        stop_worker()
 
     finally:
+        logging.info('Stop worker - cancel pending tasks')
+        stop_eventloop_tasks(loop)
+
         logging.info('Stop worker - close eventloop')
         loop.close()
