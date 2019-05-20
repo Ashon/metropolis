@@ -1,9 +1,13 @@
+import os
+
+env = os.environ
+
 
 # eventloop settings
 UVLOOP_ENABLED = True
 
 # nats broker settings
-NATS_URL = 'localhost:4222'
+NATS_URL = env.get('NATS_URL', 'nats://nats:4222')
 QUEUE_NAME = 'tasks'
 WORKER_NAME = 'worker'
 

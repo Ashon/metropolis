@@ -9,7 +9,17 @@ services:
     - 8222:8222
 
   worker:
+    image: nats-actor
     build:
       context: .
       dockerfile: example/Dockerfile
+    environment:
+      NATS_URL: nats://nats:4222
     command: python example/run.py
+
+  emitter:
+    image: nats-actor
+    environment:
+      NATS_URL: nats://nats:4222
+    command: python example/pub.py
+
