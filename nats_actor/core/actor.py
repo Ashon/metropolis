@@ -54,9 +54,32 @@ def get_callback(nats, task_fn):
     return execute
 
 
+async def on_error(exception):
+    logging.error(f'{exception}')
+
+
+async def on_disconnected():
+    logging.error(f'disconnected')
+
+
+async def on_closed():
+    logging.error(f'closed')
+
+
+async def on_reconnected():
+    logging.error(f'reconnected')
+
+
 async def get_connection(conf, loop):
     nats = Client()
-    await nats.connect(conf.NATS_URL, loop=loop)
+    await nats.connect(
+        servers=[conf.NATS_URL],
+        loop=loop,
+        error_cb=on_error,
+        disconnected_cb=on_disconnected,
+        closed_cb=on_closed,
+        reconnected_cb=on_reconnected
+    )
 
     return nats
 
