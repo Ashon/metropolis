@@ -131,33 +131,36 @@ def stop_eventloop_tasks(loop):
 
 def start_worker(conf):
     set_logger(conf)
+    logging.info('Init - Initialize application')
 
-    logging.debug('Init worker - Setup uvloop')
+    logging.debug('Init - Setup uvloop')
     if conf.UVLOOP_ENABLED:
         uvloop.install()
 
-    logging.debug('Init worker - Prepare eventloop')
+    logging.debug('Init - Prepare eventloop')
     loop = asyncio.get_event_loop()
 
-    logging.debug('Init worker - Generate worker')
+    logging.debug('Init - Generate worker')
     queue = asyncio.Queue()
     runner = generate_runner(conf, queue)
 
-    logging.debug('Init worker - Set signal handler')
+    logging.debug('Init - Set signal handler')
     stop_worker = get_stop_handler(loop, queue)
     signal.signal(signal.SIGTERM, stop_worker)
 
     try:
-        logging.info('Start worker')
+        logging.info('Start - run worker')
         loop.run_until_complete(runner(loop))
 
     except KeyboardInterrupt:
-        logging.debug(f'Stop worker - send stop message to worker')
+        logging.debug(f'Stop - send stop message to worker')
         stop_worker()
 
     finally:
-        logging.info('Stop worker - cancel pending tasks')
+        logging.info('Stop - cancel pending eventloop tasks')
         stop_eventloop_tasks(loop)
 
-        logging.info('Stop worker - close eventloop')
+        logging.info('Stop - close eventloop')
         loop.close()
+
+    logging.info('Bye')
