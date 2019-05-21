@@ -84,33 +84,49 @@ async def get_connection(conf, loop):
     return nats
 
 
-def get_stop_handler(loop, queue):
-    def stop_worker(*args, **kwargs):
-        queue.put_nowait(WORKER_CONTROL_SIGNAL_STOP)
+class Actor(object):
+    conf = None
 
-    return stop_worker
+    _loop = None
+    _queue = None
 
+    def __init__(self, conf):
+        self.conf = conf
 
-def get_worker_handler(queue):
+        set_logger(self.conf)
+        logging.info('Init - Initialize application')
+
+        logging.debug('Init - Setup uvloop')
+        if self.conf.UVLOOP_ENABLED:
+            uvloop.install()
+
+        logging.debug('Init - Prepare eventloop')
+        self._loop = asyncio.get_event_loop()
+
+        logging.debug('Init - Generate worker')
+        self._queue = asyncio.Queue()
+
+        logging.debug('Init - Set signal handler')
+        signal.signal(signal.SIGTERM, self.send_stop_signal)
+
+    def send_stop_signal(self):
+        self._queue.put_nowait(WORKER_CONTROL_SIGNAL_STOP)
+
     async def handle_worker_signal(msg):
         worker_message = msg.data.decode()
         logging.debug(f'Got worker signal [signal={worker_message}]')
 
         await queue.put_nowait(worker_message)
 
-    return handle_worker_signal
-
-
-def generate_runner(conf, queue):
-    async def run_forever(loop):
-        nats = await get_connection(conf, loop)
+    async def _run(self):
+        nats = await get_connection(self.conf, self._loop)
 
         # Setup worker lifecycle handler
         await nats.subscribe(
-            conf.WORKER_NAME, cb=get_worker_handler(queue))
+            self.conf.WORKER_NAME, cb=self.handle_worker_signal)
 
         # Register tasks
-        for task_spec in conf.TASKS:
+        for task_spec in self.conf.TASKS:
             _, task_fn = get_module(task_spec['task'])
             callback = get_callback(nats, task_fn)
 
@@ -128,7 +144,7 @@ def generate_runner(conf, queue):
         # wait for stop signal
         signal = WORKER_CONTROL_SIGNAL_START
         while signal != WORKER_CONTROL_SIGNAL_STOP:
-            signal = await queue.get()
+            signal = await self._queue.get()
 
         # Gracefully unsubscribe the subscription
         logging.debug('Drain subscriptions')
@@ -138,52 +154,27 @@ def generate_runner(conf, queue):
 
         return True
 
-    return run_forever
+    def run(self):
+        try:
+            logging.info('Start - run worker')
+            self._loop.run_until_complete(self._run())
 
+        except KeyboardInterrupt:
+            logging.debug(f'Stop - send stop message to worker')
+            self.send_stop_signal()
 
-def stop_eventloop_tasks(loop):
-    pending_tasks = asyncio.Task.all_tasks()
-    for task in pending_tasks:
-        logging.debug((
-            f'[task={task.__class__.__name__}:{task.__hash__()}]'
-        ))
-        with suppress(asyncio.CancelledError):
-            loop.run_until_complete(task)
-            logging.debug(f'{task.__hash__()} [done={task.done()}]')
+        finally:
+            logging.info('Stop - cancel pending eventloop tasks')
+            pending_tasks = asyncio.Task.all_tasks()
+            for task in pending_tasks:
+                logging.debug((
+                    f'[task={task.__class__.__name__}:{task.__hash__()}]'
+                ))
+                with suppress(asyncio.CancelledError):
+                    self._loop.run_until_complete(task)
+                    logging.debug(f'{task.__hash__()} [done={task.done()}]')
 
+            logging.info('Stop - close eventloop')
+            self._loop.close()
 
-def start_worker(conf):
-    set_logger(conf)
-    logging.info('Init - Initialize application')
-
-    logging.debug('Init - Setup uvloop')
-    if conf.UVLOOP_ENABLED:
-        uvloop.install()
-
-    logging.debug('Init - Prepare eventloop')
-    loop = asyncio.get_event_loop()
-
-    logging.debug('Init - Generate worker')
-    queue = asyncio.Queue()
-    runner = generate_runner(conf, queue)
-
-    logging.debug('Init - Set signal handler')
-    stop_worker = get_stop_handler(loop, queue)
-    signal.signal(signal.SIGTERM, stop_worker)
-
-    try:
-        logging.info('Start - run worker')
-        loop.run_until_complete(runner(loop))
-
-    except KeyboardInterrupt:
-        logging.debug(f'Stop - send stop message to worker')
-        stop_worker()
-
-    finally:
-        logging.info('Stop - cancel pending eventloop tasks')
-        stop_eventloop_tasks(loop)
-
-        logging.info('Stop - close eventloop')
-        loop.close()
-
-    logging.info('Bye')
+        logging.info('Bye')
