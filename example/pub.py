@@ -21,11 +21,11 @@ def main(name):
             for i in range(random.randint(100, 1000))
         ).encode()
 
-        _ = actor.send_task(name, payload)
+        _ = actor.publish(name, payload)
         counter += 1
-        if counter % 1000 == 0:
+        if counter % 100 == 0:
             elapsed = time.perf_counter() - now
-            print(f'{1000 / elapsed:.3f} RPS')
+            print(f'{100 / elapsed:.3f} RPS')
             now = time.perf_counter()
 
 

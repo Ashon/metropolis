@@ -63,7 +63,8 @@ class NatsDriver(object):
                     ret = task_fn(data)
                     elapsed = (time.perf_counter() - now) * 1000
 
-                    await self.nats.publish(msg.reply, ret.encode())
+                    if msg.reply:
+                        await self.nats.publish(msg.reply, ret.encode())
 
                     logging.info((
                         'Task finished. '

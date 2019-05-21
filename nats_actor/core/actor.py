@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import signal
-import time
 from contextlib import asynccontextmanager
 from contextlib import suppress
 
@@ -132,19 +131,23 @@ class Actor(object):
 
         logging.info('Bye')
 
-    async def request(self, name, payload, loop=None):
+    async def async_request(self, name, payload, loop=None):
         async with self.nats_driver(loop) as nats:
             res = await nats.request(name, payload)
             return res
 
-    def send_task(self, name, payload):
+    async def async_publish(self, name, payload, loop=None):
+        async with self.nats_driver(loop) as nats:
+            await nats.publish(name, payload)
+
+    def request(self, name, payload):
         with simple_eventloop() as loop:
-            now = time.perf_counter()
-
             response = loop.run_until_complete(
-                self.request(name, payload, loop))
+                self.async_request(name, payload, loop))
+            return response
 
-            elapsed = (time.perf_counter() - now) * 1000
-            logging.debug(f'Request Finished. [elapsed={elapsed:.3f}]')
-
+    def publish(self, name, payload):
+        with simple_eventloop() as loop:
+            response = loop.run_until_complete(
+                self.async_publish(name, payload, loop))
             return response
