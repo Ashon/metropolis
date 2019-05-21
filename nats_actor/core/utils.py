@@ -1,6 +1,8 @@
+import asyncio
 import logging
 import importlib
 import signal
+from contextlib import contextmanager
 
 
 def get_module(module_path):
@@ -34,3 +36,13 @@ class InterruptBumper(object):
         signal.signal(signal.SIGINT, self.old_handler)
         if self.signal_received:
             self.old_handler(*self.signal_received)
+
+
+@contextmanager
+def simple_eventloop():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    yield loop
+
+    loop.close()

@@ -15,7 +15,7 @@ WORKER_NAME = 'worker'
 HEARTBEAT_INTERVAL = 5
 
 # logger settings
-LOG_LEVEL = 'DEBUG'
+LOG_LEVEL = 'ERROR'
 LOG_FORMAT = (
     '[%(asctime)s]'
     '[%(process)d/%(processName)s]'
