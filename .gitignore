@@ -1,3 +1,6 @@
+.vscode
+*.swp
+
 __pycache__
 .python-version
 .coverage
