@@ -10,12 +10,13 @@ UVLOOP_ENABLED = True
 NATS_URL = env.get('NATS_URL', 'nats://nats:4222')
 QUEUE_NAME = 'tasks'
 WORKER_NAME = 'worker'
+CONTROL_LIFECYCLE_ENABLED = True
 
 # worker settings
 HEARTBEAT_INTERVAL = 5
 
 # logger settings
-LOG_LEVEL = 'ERROR'
+LOG_LEVEL = 'DEBUG'
 LOG_FORMAT = (
     '[%(asctime)s]'
     '[%(process)d/%(processName)s]'

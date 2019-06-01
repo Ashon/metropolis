@@ -6,9 +6,9 @@ from contextlib import suppress
 
 import uvloop
 
-from nats_actor.core.utils import get_module
-from nats_actor.core.utils import simple_eventloop
-from nats_actor.core.driver import NatsDriver
+from nats_worker.core.utils import get_module
+from nats_worker.core.utils import simple_eventloop
+from nats_worker.core.driver import NatsDriver
 
 
 WORKER_CONTROL_SIGNAL_START = 'START'
@@ -20,16 +20,16 @@ def set_logger(conf):
     logging.basicConfig(format=conf.LOG_FORMAT, level=log_level)
 
 
-class Actor(object):
+class Worker(object):
     conf = None
 
     # nats driver
     _driver = None
 
-    # actor object's eventloop
+    # worker object's eventloop
     _loop = None
 
-    # aio queue for actor lifecycle control
+    # aio queue for worker lifecycle control
     _queue = None
 
     def __init__(self, conf):
@@ -83,7 +83,8 @@ class Actor(object):
         async with self.nats_driver() as nats:
 
             # Setup worker lifecycle handler
-            await nats.subscribe(self.conf.WORKER_NAME, cb=self._handle_signal)
+            if self.conf.CONTROL_LIFECYCLE_ENABLED:
+                await nats.subscribe(self.conf.WORKER_NAME, cb=self._handle_signal)
 
             # Register tasks
             for task_spec in self.conf.TASKS:

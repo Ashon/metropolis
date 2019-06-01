@@ -6,12 +6,12 @@ import random
 import string
 import time
 
-from nats_actor.core.actor import Actor
+from nats_worker.core.worker import Worker
 import settings
 
 
 def main(name):
-    actor = Actor(settings)
+    worker = Worker(settings)
     counter = 0
     now = time.perf_counter()
 
@@ -21,7 +21,7 @@ def main(name):
             for i in range(random.randint(100, 1000))
         ).encode()
 
-        _ = actor.publish(name, payload)
+        _ = worker.publish(name, payload)
         counter += 1
         if counter % 100 == 0:
             elapsed = time.perf_counter() - now

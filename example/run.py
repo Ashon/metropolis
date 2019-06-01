@@ -2,8 +2,8 @@ import os
 import sys
 sys.path.append(os.getcwd()) # noqa E402
 
-from nats_actor.core.actor import Actor
+from nats_worker.core.worker import Worker
 import settings
 
-actor = Actor(settings)
-actor.run()
+worker = Worker(settings)
+worker.run()

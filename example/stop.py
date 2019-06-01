@@ -5,7 +5,7 @@ sys.path.append(os.getcwd()) # noqa E402
 import asyncio
 import logging
 
-from nats_actor.core.actor import get_connection
+from nats_worker.core.worker import get_connection
 import settings
 
 
