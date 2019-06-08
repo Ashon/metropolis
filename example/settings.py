@@ -16,7 +16,7 @@ CONTROL_LIFECYCLE_ENABLED = True
 HEARTBEAT_INTERVAL = 5
 
 # logger settings
-LOG_LEVEL = 'DEBUG'
+LOG_LEVEL = env.get('LOG_LEVEL', 'ERROR')
 LOG_FORMAT = (
     '[%(asctime)s]'
     '[%(process)d/%(processName)s]'
