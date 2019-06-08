@@ -32,7 +32,7 @@ class Worker(object):
     # aio queue for worker lifecycle control
     _queue = None
 
-    def __init__(self, conf):
+    def __init__(self, conf, loop=None):
         self.conf = conf
 
         set_logger(self.conf)
@@ -46,7 +46,7 @@ class Worker(object):
             uvloop.install()
 
         logging.debug('Prepare eventloop')
-        self._loop = asyncio.get_event_loop()
+        self._loop = loop or asyncio.get_event_loop()
 
         logging.debug('Generate worker')
         self._queue = asyncio.Queue()
@@ -66,12 +66,14 @@ class Worker(object):
             await self._queue.put_nowait(worker_message)
         return _handle_signal
 
+    @property
+    def run_until_complete(self):
+        return self._loop.run_until_complete
+
     @asynccontextmanager
     async def nats_driver(self, loop=None):
         # remove condition for performance
-        if not loop:
-            loop = self._loop
-
+        loop = loop or self._loop
         nats = await self._driver.get_connection(loop)
 
         yield nats
