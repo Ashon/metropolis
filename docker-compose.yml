@@ -15,19 +15,14 @@ services:
       dockerfile: example/Dockerfile
     environment:
       NATS_URL: nats://nats:4222
+      LOG_LEVEL: DEBUG
     command: python example/run.py
 
   proxy:
     image: nats-worker
     environment:
       NATS_URL: nats://nats:4222
+      LOG_LEVEL: DEBUG
     command: python example/proxy.py
     ports:
     - 8000:8000
-
-  emitter:
-    image: nats-worker
-    environment:
-      NATS_URL: nats://nats:4222
-      PYTHONUNBUFFERED: 1
-    command: python example/pub.py
