@@ -10,7 +10,7 @@ import settings
 
 def main(name):
     worker = Worker(settings)
-    payload = b'hello'
+    payload = b'{"data":"hello"}'
 
     async def publish_random_msg(worker):
         counter = 0
