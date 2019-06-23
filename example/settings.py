@@ -11,6 +11,7 @@ NATS_URL = env.get('NATS_URL', 'nats://nats:4222')
 QUEUE_NAME = 'tasks'
 WORKER_NAME = 'worker'
 CONTROL_LIFECYCLE_ENABLED = True
+SERIALIZER_CLASS = 'nats_worker.core.serializer.JsonMessageSerializer'
 
 # worker settings
 HEARTBEAT_INTERVAL = 5
@@ -27,7 +28,7 @@ LOG_FORMAT = (
 
 # task settings
 TASKS = [{
-    'subject': 'foo',
+    'subject': 'foo.get',
     'queue': 'worker',
     'task': 'example.tasks.mytask'
 }]

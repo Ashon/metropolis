@@ -39,7 +39,10 @@ class Worker(object):
         logging.info('Initialize application')
 
         logging.debug('Setup driver')
-        self._driver = NatsDriver([self.conf.NATS_URL])
+        _, serializer = get_module(conf.SERIALIZER_CLASS)
+        self._driver = NatsDriver(
+            urls=self.conf.NATS_URL.split(','),
+            serializer=serializer)
 
         logging.debug('Setup uvloop')
         if self.conf.UVLOOP_ENABLED:
@@ -53,6 +56,7 @@ class Worker(object):
 
         logging.debug('Set signal handler')
         self._handle_signal = self.create_signal_handler()
+        signal.signal(signal.SIGINT, self.stop)
         signal.signal(signal.SIGTERM, self.stop)
 
     def stop(self):

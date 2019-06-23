@@ -8,9 +8,11 @@ from nats_worker.core.utils import InterruptBumper
 
 class NatsDriver(object):
     nats = None
+    serializer = None
 
-    def __init__(self, urls):
+    def __init__(self, urls, serializer):
         self.urls = urls
+        self.serializer = serializer
 
     async def get_connection(self, loop):
         self.nats = Client()
@@ -59,8 +61,8 @@ class NatsDriver(object):
             try:
                 with InterruptBumper(attempts=3):
                     now = time.perf_counter()
-                    data = msg.data.decode()
-                    ret = task_fn(data)
+                    data = self.serializer.deserialize(msg.data)
+                    ret = task_fn(**data)
                     elapsed = (time.perf_counter() - now) * 1000
 
                     if msg.reply:
