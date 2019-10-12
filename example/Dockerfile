@@ -9,4 +9,4 @@ COPY ./requirements.txt ./
 RUN pip install -r requirements.txt
 
 COPY nats_worker ./nats_worker
-COPY example ./example
+COPY example/app ./app

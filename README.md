@@ -1,7 +1,19 @@
-# PoC of Simple microservice architecture using NATS
+# Python Microservice Gateway with NATS Messaging
 
 클라우드 환경(특히 `Kubernetes`)에서 `NATS`를 이용해서 쉽게 확장할 수 있는
 마이크로서비스 아키텍쳐에 대한 PoC 프로젝트.
+
+## ToC
+
+- [Python Microservice Gateway with NATS Messaging](#python-microservice-gateway-with-nats-messaging)
+  - [ToC](#toc)
+  - [Overview](#overview)
+  - [NATS](#nats)
+  - [Architecture Concept](#architecture-concept)
+    - [Components](#components)
+    - [Workflow](#workflow)
+    - [Pros](#pros)
+    - [Cons](#cons)
 
 ## Overview
 
@@ -16,7 +28,7 @@
 
 - `NATS`를 이용하는 워커와, Endpoint에 대한 HTTP 프록시를 제공하는 프레임워크를 만들어 본다.
 - `NATS` 를 쓰게 되면, 흔히 말하는 Actor 모델에서 Mailbox가 없어지는 느낌인데,
-  이래도 되는지 모르겠다.
+  이래도 되는지 모르겠다. (굳이 Actor 모델과 비교한다면...)
 
 ## NATS
 
@@ -51,3 +63,9 @@
 - `NATS`: 메시징 채널
 - `Worker`: Business Logic 수행
 - `HttpProxy`: `NATS <-> HTTP`로 리퀘스트를 프록싱, API Gateway의 역할을 담당한다.
+
+### Workflow
+
+### Pros
+
+### Cons

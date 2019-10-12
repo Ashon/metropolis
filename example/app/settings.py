@@ -30,5 +30,5 @@ LOG_FORMAT = (
 TASKS = [{
     'subject': 'foo.get',
     'queue': 'worker',
-    'task': 'example.tasks.mytask'
+    'task': 'app.tasks.mytask'
 }]

@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: natsworker
+spec:
+  selector:
+    matchLabels:
+      app: natsworker
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: natsworker
+    spec:
+      containers:
+      - name: natsworker
+        image: ashon/python-nats-worker
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        env:
+        - name: NATS_URL
+          value: nats://example-nats-cluster.default.svc.cluster.local:4222
+        - name: LOG_LEVEL
+          value: DEBUG
+        args:
+        - python
+        - app/worker.py

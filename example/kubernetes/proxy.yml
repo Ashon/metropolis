@@ -1,0 +1,45 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: natsgateway
+spec:
+  selector:
+    matchLabels:
+      app: natsgateway
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: natsgateway
+    spec:
+      containers:
+      - name: natsgateway
+        image: ashon/python-nats-worker
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8000
+        env:
+        - name: NATS_URL
+          value: nats://example-nats-cluster.default.svc.cluster.local:4222
+        - name: LOG_LEVEL
+          value: DEBUG
+        args:
+        - python
+        - app/proxy.py
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: natsgateway
+spec:
+  selector:
+    app: natsgateway
+  ports:
+  - port: 8888
+    targetPort: 8000

@@ -16,13 +16,13 @@ services:
     environment:
       NATS_URL: nats://nats:4222
       LOG_LEVEL: DEBUG
-    command: python example/worker.py
+    command: python app/worker.py
 
   proxy:
     image: nats-worker
     environment:
       NATS_URL: nats://nats:4222
       LOG_LEVEL: DEBUG
-    command: python example/proxy.py
+    command: python app/proxy.py
     ports:
-    - 8000:8000
+    - 8888:8000
