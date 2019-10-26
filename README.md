@@ -21,9 +21,6 @@
       - [example/app/settings.py](#exampleappsettingspy)
       - [example/kubernetes](#examplekubernetes)
     - [Steps](#steps)
-  - [Conclusion](#conclusion)
-    - [Pros](#pros)
-    - [Cons](#cons)
 
 ## Overview
 
@@ -119,9 +116,3 @@ $ kubectl apply -f ./example/kubernetes
 # URL test
 $ curl http://example-natsgateway.mysite.local/foo?data=asdf
 ```
-
-## Conclusion
-
-### Pros
-
-### Cons
