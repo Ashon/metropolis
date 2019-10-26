@@ -27,7 +27,7 @@ spec:
         - name: NATS_URL
           value: nats://example-nats-cluster.default.svc.cluster.local:4222
         - name: LOG_LEVEL
-          value: DEBUG
+          value: INFO
         args:
         - python
         - app/proxy.py
@@ -43,3 +43,18 @@ spec:
   ports:
   - port: 8888
     targetPort: 8000
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: natsgateway
+spec:
+  rules:
+  - host: example-natsgateway.mysite.local
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: natsgateway
+          servicePort: 8888

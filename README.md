@@ -11,7 +11,17 @@
   - [NATS](#nats)
   - [Architecture Concept](#architecture-concept)
     - [Components](#components)
-    - [Workflow](#workflow)
+      - [Nats](#nats)
+      - [Worker](#worker)
+      - [HttpProxy](#httpproxy)
+  - [Example](#example)
+    - [Application](#application)
+      - [example/app/proxy.py](#exampleappproxypy)
+      - [example/app/worker.py](#exampleappworkerpy)
+      - [example/app/settings.py](#exampleappsettingspy)
+      - [example/kubernetes](#examplekubernetes)
+    - [Steps](#steps)
+  - [Conclusion](#conclusion)
     - [Pros](#pros)
     - [Cons](#cons)
 
@@ -27,8 +37,6 @@
   - **이 경우 별도의 `NATS` 게이트웨이가 필요하게 된다.**
 
 - `NATS`를 이용하는 워커와, Endpoint에 대한 HTTP 프록시를 제공하는 프레임워크를 만들어 본다.
-- `NATS` 를 쓰게 되면, 흔히 말하는 Actor 모델에서 Mailbox가 없어지는 느낌인데,
-  이래도 되는지 모르겠다. (굳이 Actor 모델과 비교한다면...)
 
 ## NATS
 
@@ -60,11 +68,59 @@
 
 ### Components
 
-- `NATS`: 메시징 채널
-- `Worker`: Business Logic 수행
-- `HttpProxy`: `NATS <-> HTTP`로 리퀘스트를 프록싱, API Gateway의 역할을 담당한다.
+#### Nats
 
-### Workflow
+메시징 채널
+
+#### Worker
+
+Business Logic 수행.
+
+#### HttpProxy
+
+`NATS <-> HTTP`로 리퀘스트를 프록싱, API Gateway의 역할을 담당한다.
+
+`GET /foo/bar` 형식의 URL pattern들을 `foo.bar.GET` 형식의 subject로 변환하여
+Nats 스트림을 통해 메시지를 주고받게 된다.
+
+## Example
+
+### Application
+
+구현된 간단한 수준의 워커와 http proxy 컴포넌트를 이용해서,
+Nats를 이용한 API 게이트웨이와 백엔드 워커를 구현하였다.
+
+#### example/app/proxy.py
+
+nats http gateway
+
+#### example/app/worker.py
+
+nats worker
+
+#### example/app/settings.py
+
+proxy와 워커의 태스크 설정등을 관리한다.
+
+#### example/kubernetes
+
+구현된 워커와 프록시, k8s nats operator를 이용해 클러스터를 전개하고 서비스 셋을 구성하기 위한
+yaml definition들을 관리
+
+### Steps
+
+``` sh
+# nats operator를 k8s cluster에 설치한다.
+$ ./example/scripts/install_nats_operator.sh
+
+# example application을 배포한다.
+$ kubectl apply -f ./example/kubernetes
+
+# URL test
+$ curl http://example-natsgateway.mysite.local/foo?data=asdf
+```
+
+## Conclusion
 
 ### Pros
 
