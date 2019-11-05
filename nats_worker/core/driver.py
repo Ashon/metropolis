@@ -62,11 +62,24 @@ class NatsDriver(object):
                 with InterruptBumper(attempts=3):
                     now = time.perf_counter()
                     data = self.serializer.deserialize(msg.data)
-                    ret = task_fn(**data)
-                    elapsed = (time.perf_counter() - now) * 1000
+
+                    try:
+                        ret = task_fn(**data)
+                        code = 200
+
+                    except Exception as e:
+                        ret = str(e)
+                        code = 500
 
                     if msg.reply:
-                        await self.nats.publish(msg.reply, ret.encode())
+                        response_data = self.serializer.serialize({
+                            'code': code,
+                            'data': ret
+                        })
+
+                        await self.nats.publish(msg.reply, response_data)
+
+                    elapsed = (time.perf_counter() - now) * 1000
 
                     logging.info((
                         'Task finished. '

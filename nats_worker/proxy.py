@@ -61,10 +61,10 @@ class WorkerHttpProxy(object):
 
         # data transport
         message = self.driver.serializer.serialize(body)
-        response = await self.nats.request(route, message)
+        worker_response = await self.nats.request(route, message)
 
-        return json({
-            'route': route,
-            'body': body,
-            'response': response
-        })
+        worker_response_dict = self.driver.serializer.deserialize(
+            worker_response.data)
+        response_data = worker_response_dict['data']
+
+        return json(response_data, status=worker_response_dict['code'])
