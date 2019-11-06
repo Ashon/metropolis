@@ -3,6 +3,7 @@ import os
 env = os.environ
 
 
+# [Worker, Proxy]
 # eventloop settings
 UVLOOP_ENABLED = True
 
@@ -26,9 +27,11 @@ LOG_FORMAT = (
     ' %(message)s'
 )
 
+
+# [Worker]
 # task settings
 TASKS = [{
     'subject': 'foo.get',
     'queue': 'worker',
-    'task': 'app.tasks.mytask'
+    'task': 'tasks.mytask'
 }]
