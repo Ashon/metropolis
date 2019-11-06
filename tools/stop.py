@@ -5,25 +5,24 @@ sys.path.append(os.getcwd()) # noqa E402
 import asyncio
 import logging
 
-from nats_worker.core.worker import get_connection
-import settings
+from nats_worker.worker import Worker
+from example.app import settings
 
 
 logging.basicConfig(format=settings.LOG_FORMAT, level=logging.INFO)
 
 
-async def stop(loop):
-    nats = await get_connection(settings, loop)
-    await nats.publish(settings.WORKER_NAME, b'STOP')
-
-    await nats.close()
+async def stop():
+    worker = Worker(settings)
+    async with worker.nats_driver() as nats:
+        await nats.publish(settings.WORKER_NAME, b'STOP')
 
 
 def main():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    loop.run_until_complete(stop(loop))
+    loop.run_until_complete(stop())
     loop.close()
 
 

@@ -4,8 +4,8 @@ sys.path.append(os.getcwd()) # noqa E402
 
 import time
 
-from nats_worker.core.worker import Worker
-import settings
+from nats_worker.worker import Worker
+from example.app import settings
 
 
 def main(name):
@@ -13,15 +13,13 @@ def main(name):
     payload = b'{"data":"hello"}'
 
     async def publish_random_msg(worker):
-        counter = 0
         now = time.perf_counter()
         async with worker.nats_driver() as nats:
-            while 1:
+            for i in range(10000):
                 _ = await nats.request(name, payload)
-                counter += 1
-                if counter % 100 == 0:
+                if i % 1000 == 0:
                     elapsed = time.perf_counter() - now
-                    print(f'{100 / elapsed:.3f} RPS')
+                    print(f'{1000 / elapsed:.3f} RPS ({i} msgs)')
                     now = time.perf_counter()
 
     worker.run_until_complete(
@@ -30,4 +28,4 @@ def main(name):
 
 
 if __name__ == "__main__":
-    main('foo')
+    main('foo.get')
