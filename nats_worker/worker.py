@@ -59,7 +59,7 @@ class Worker(object):
         signal.signal(signal.SIGINT, self.stop)
         signal.signal(signal.SIGTERM, self.stop)
 
-    def stop(self):
+    def stop(self, *args, **kwargs):
         self._queue.put_nowait(WORKER_CONTROL_SIGNAL_STOP)
 
     def create_signal_handler(self):
