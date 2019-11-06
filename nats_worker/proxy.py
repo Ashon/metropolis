@@ -1,7 +1,3 @@
-import os
-import sys
-sys.path.append(os.getcwd()) # noqa E402
-
 from sanic import Sanic
 from sanic.response import json
 
@@ -25,6 +21,7 @@ class WorkerHttpProxy(object):
 
         self.app = Sanic()
         self.app.listener('before_server_start')(self.setup)
+        self.app.route('/_routes/', methods=['GET'])(self.get_routes)
         self.app.route('/<path:[^/].*?>', methods=['GET'])(self.resolve_message)
 
     async def setup(self, app, loop):
@@ -55,6 +52,10 @@ class WorkerHttpProxy(object):
         ) if item)
 
         return (nats_route, request.args)
+
+    async def get_routes(self, request):
+        self.nats
+        return json({})
 
     async def resolve_message(self, request, path: str):
         (route, body) = self.serialize_request_to_nats_message(request, path)
