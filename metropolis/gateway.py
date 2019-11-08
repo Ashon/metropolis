@@ -5,7 +5,7 @@ from metropolis.core.driver import NatsDriver
 from metropolis.core.utils import get_module
 
 
-class WorkerHttpProxy(object):
+class Gateway(object):
     conf = None
     app = None
     driver = None
