@@ -1,6 +1,6 @@
 # Metropolis (Python Microservice Gateway with NATS)
 
-Simple, Scalable, Observable, Operable Service Gateway Project.
+> Can we make `simple`, `scalable`, `observable`, `operable` service gateway?
 
 클라우드 환경(특히 `Kubernetes`)에서 `NATS`를 이용해서 쉽게 확장할 수 있는
 마이크로서비스 아키텍쳐에 대한 PoC 프로젝트.
