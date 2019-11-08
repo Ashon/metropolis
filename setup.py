@@ -10,7 +10,7 @@ setuptools.setup(
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     url="https://github.com/ashon/metropolis",
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(exclude=['example']),
     install_requires=open('requirements.txt').readlines(),
     python_requires='>=3',
     classifiers=[
