@@ -6,9 +6,9 @@ from contextlib import suppress
 
 import uvloop
 
-from nats_worker.core.utils import get_module
-from nats_worker.core.utils import simple_eventloop
-from nats_worker.core.driver import NatsDriver
+from metropolis.core.utils import get_module
+from metropolis.core.utils import simple_eventloop
+from metropolis.core.driver import NatsDriver
 
 
 WORKER_CONTROL_SIGNAL_START = 'START'

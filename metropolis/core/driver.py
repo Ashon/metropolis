@@ -3,7 +3,7 @@ import time
 
 from nats.aio.client import Client
 
-from nats_worker.core.utils import InterruptBumper
+from metropolis.core.utils import InterruptBumper
 
 
 class NatsDriver(object):

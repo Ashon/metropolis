@@ -1,8 +1,8 @@
 from sanic import Sanic
 from sanic.response import json
 
-from nats_worker.core.driver import NatsDriver
-from nats_worker.core.utils import get_module
+from metropolis.core.driver import NatsDriver
+from metropolis.core.utils import get_module
 
 
 class WorkerHttpProxy(object):

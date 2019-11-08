@@ -1,26 +1,9 @@
-# Python Microservice Gateway with NATS Messaging
+# Metropolis (Python Microservice Gateway with NATS)
+
+Simple, Scalable, Observable, Operable Service Gateway Project.
 
 클라우드 환경(특히 `Kubernetes`)에서 `NATS`를 이용해서 쉽게 확장할 수 있는
 마이크로서비스 아키텍쳐에 대한 PoC 프로젝트.
-
-## ToC
-
-- [Python Microservice Gateway with NATS Messaging](#python-microservice-gateway-with-nats-messaging)
-  - [ToC](#toc)
-  - [Overview](#overview)
-  - [NATS](#nats)
-  - [Architecture Concept](#architecture-concept)
-    - [Components](#components)
-      - [Nats](#nats)
-      - [Worker](#worker)
-      - [HttpProxy](#httpproxy)
-  - [Example](#example)
-    - [Application](#application)
-      - [example/app/proxy.py](#exampleappproxypy)
-      - [example/app/worker.py](#exampleappworkerpy)
-      - [example/app/settings.py](#exampleappsettingspy)
-      - [example/kubernetes](#examplekubernetes)
-    - [Steps](#steps)
 
 ## Overview
 
@@ -49,10 +32,12 @@
 ``` txt
 +- Node-1 --+  +- Node-2 -+  +- Node-3 --+  +- Node-4 -+
 |           |  |          |  |           |  |          |
-| Worker-a  |  |          |  |           |  | Worker-d |
+|   NATS ========= NATS ======================= NATS   | < Internal Bus >
+|    |      |  |    |     |  |    |      |  |    |     |
+| Worker-a  |  |    |     |  |    |      |  | Worker-d |
 | Worker-b  |  | Worker-c |  | Worker-a  |  | Worker-c |
 |    |      |  |    |     |  |    |      |  |    |     |
-|   NATS ========= NATS ======================= NATS   |
+|   NATS ========= NATS ======================= NATS   | < External Bus >
 |    |      |  |          |  |    |      |  |          |
 | HttpProxy |  |          |  | HttpProxy |  |          |
 |    |      |  |          |  |    |      |  |          |
