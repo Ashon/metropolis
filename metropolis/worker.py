@@ -32,6 +32,9 @@ class Worker(object):
     # aio queue for worker lifecycle control
     _queue = None
 
+    # worker tasks
+    _tasks = []
+
     def __init__(self, conf, loop=None):
         self.conf = conf
 
@@ -48,6 +51,10 @@ class Worker(object):
         if self.conf.UVLOOP_ENABLED:
             uvloop.install()
 
+        # initialize TASK field
+        if not getattr(self.conf, 'TASKS', False):
+            setattr(self.conf, 'TASKS', [])
+
         logging.debug('Prepare eventloop')
         self._loop = loop or asyncio.get_event_loop()
 
@@ -55,14 +62,22 @@ class Worker(object):
         self._queue = asyncio.Queue()
 
         logging.debug('Set signal handler')
+        # stop by message
         self._handle_signal = self.create_signal_handler()
+        # stop by interrupt
         signal.signal(signal.SIGINT, self.stop)
         signal.signal(signal.SIGTERM, self.stop)
 
     def stop(self, *args, **kwargs):
+        """Send stop signal to worker lifecycle handler queue
+        """
+
         self._queue.put_nowait(WORKER_CONTROL_SIGNAL_STOP)
 
     def create_signal_handler(self):
+        """Return nats message handler function stopping worker.
+        """
+
         async def _handle_signal(msg):
             worker_message = msg.data.decode()
             logging.debug(f'Got worker signal [signal={worker_message}]')
@@ -85,16 +100,41 @@ class Worker(object):
         # Gracefully unsubscribe the subscription
         await self._driver.close()
 
+    def task(self, subject, queue):
+        """Register task decorator
+
+        Example:
+            @worker.task(subject='foo.get', queue='worker')
+            def mytask(data, *args, **kwargs):
+                return data[0][::-1]
+        """
+
+        def worker_task(task_fn):
+            self.conf.TASKS.append({
+                'subject': subject,
+                'queue': queue,
+                'task': task_fn
+            })
+
+            return task_fn
+
+        return worker_task
+
     async def _run_in_loop(self):
         async with self.nats_driver() as nats:
 
             # Setup worker lifecycle handler
             if self.conf.CONTROL_LIFECYCLE_ENABLED:
-                await nats.subscribe(self.conf.WORKER_NAME, cb=self._handle_signal)
+                await nats.subscribe(
+                    self.conf.WORKER_NAME, cb=self._handle_signal)
 
             # Register tasks
             for task_spec in self.conf.TASKS:
-                _, task_fn = get_module(task_spec['task'])
+                if type(task_spec) is str:
+                    _, task_fn = get_module(task_spec['task'])
+                else:
+                    task_fn = task_spec['task']
+
                 callback = self._driver.create_task(task_fn)
 
                 subscription_id = await nats.subscribe(
