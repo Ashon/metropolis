@@ -148,7 +148,8 @@ class Worker(object):
                 else:
                     task_fn = task_spec['task']
 
-                callback = self._driver.create_task(task_fn)
+                # more complicated: self._driver.create_task
+                callback = self._driver.create_task_simple(task_fn)
 
                 subscription_id = await nats.subscribe(
                     task_spec['subject'], queue=task_spec['queue'], cb=callback)

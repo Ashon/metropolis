@@ -44,6 +44,48 @@ class NatsDriver(object):
     async def on_reconnected():
         logging.info(f'reconnected')
 
+    async def execute(self, task_fn, msg):
+        logging.info((
+            'Received message. '
+            f'[subject={msg.subject}][fn={task_fn.__name__}]'
+            f'[from={msg.reply}]'
+        ))
+
+        now = time.perf_counter()
+        data = self.serializer.deserialize(msg.data)
+
+        try:
+            ret = task_fn(**data)
+            code = 200
+
+        except Exception as e:
+            ret = str(e)
+            code = 500
+
+        if msg.reply:
+            response_data = self.serializer.serialize({
+                'code': code,
+                'data': ret
+            })
+
+            await self.nats.publish(msg.reply, response_data)
+
+        elapsed = (time.perf_counter() - now) * 1000
+
+        logging.info((
+            'Task finished. '
+            f'[subject={msg.subject}][fn={task_fn.__name__}]'
+            f'[elapsed={elapsed:.3f}ms]'
+        ))
+
+    def create_task_simple(self, task_fn):
+        logging.debug(f'Create task [task_fn={task_fn.__name__}]')
+
+        async def run_task(msg):
+            await self.execute(task_fn, msg)
+
+        return run_task
+
     def create_task(self, task_fn):
         logging.debug(f'Create task [task_fn={task_fn.__name__}]')
 
@@ -52,40 +94,9 @@ class NatsDriver(object):
                 logging.debug('Connection is draining')
                 raise Exception('draining')
 
-            logging.info((
-                'Received message. '
-                f'[subject={msg.subject}][fn={task_fn.__name__}]'
-                f'[from={msg.reply}]'
-            ))
-
             try:
                 with InterruptBumper(attempts=3):
-                    now = time.perf_counter()
-                    data = self.serializer.deserialize(msg.data)
-
-                    try:
-                        ret = task_fn(**data)
-                        code = 200
-
-                    except Exception as e:
-                        ret = str(e)
-                        code = 500
-
-                    if msg.reply:
-                        response_data = self.serializer.serialize({
-                            'code': code,
-                            'data': ret
-                        })
-
-                        await self.nats.publish(msg.reply, response_data)
-
-                    elapsed = (time.perf_counter() - now) * 1000
-
-                    logging.info((
-                        'Task finished. '
-                        f'[subject={msg.subject}][fn={task_fn.__name__}]'
-                        f'[elapsed={elapsed:.3f}ms]'
-                    ))
+                    self.execute(task_fn, msg)
 
             except KeyboardInterrupt:
                 await self.nats.publish(
