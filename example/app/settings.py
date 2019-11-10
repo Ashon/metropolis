@@ -19,19 +19,3 @@ HEARTBEAT_INTERVAL = 5
 
 # logger settings
 LOG_LEVEL = env.get('LOG_LEVEL', 'ERROR')
-LOG_FORMAT = (
-    '[%(asctime)s]'
-    '[%(process)d/%(processName)s]'
-    '[%(name)s:%(levelname)s]'
-    '[%(filename)s:%(lineno)d:%(funcName)s]'
-    ' %(message)s'
-)
-
-
-# [Worker]
-# task settings
-TASKS = [{
-    'subject': 'foo.get',
-    'queue': 'worker',
-    'task': 'tasks.mytask'
-}]
