@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="metropolis",
-    version="0.1.2",
+    version="0.1.3",
     license='MIT',
     author="ashon lee",
     author_email="ashon8813@gmail.com",
