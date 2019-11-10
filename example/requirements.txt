@@ -1,1 +1,1 @@
-metropolis==0.1.3
+metropolis==0.1.4.dev1

@@ -14,14 +14,14 @@ services:
       context: .
     environment:
       NATS_URL: nats://nats:4222
-      LOG_LEVEL: DEBUG
+      LOG_LEVEL: ERROR
     command: python app/worker.py
 
   gateway:
     image: nats-worker
     environment:
       NATS_URL: nats://nats:4222
-      LOG_LEVEL: DEBUG
+      LOG_LEVEL: ERROR
     command: python app/gateway.py
     ports:
     - 8888:8000
