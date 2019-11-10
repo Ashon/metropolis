@@ -11,13 +11,24 @@ from metropolis.core.utils import simple_eventloop
 from metropolis.core.driver import NatsDriver
 
 
+# Worker constants
 WORKER_CONTROL_SIGNAL_START = 'START'
 WORKER_CONTROL_SIGNAL_STOP = 'STOP'
 
+# Default configurations
+DEFAULT_LOG_LEVEL = 'WARNING'
+DEFAULT_LOG_FORMAT = (
+    '[%(asctime)s]'
+    '[%(process)d/%(processName)s]'
+    '[%(name)s:%(levelname)s]'
+    '[%(filename)s:%(lineno)d:%(funcName)s]'
+    ' %(message)s'
+)
 
-def set_logger(conf):
-    log_level = getattr(logging, conf.LOG_LEVEL, 'WARNING')
-    logging.basicConfig(format=conf.LOG_FORMAT, level=log_level)
+
+def set_logger(log_level, log_format):
+    log_level = getattr(logging, log_level, 'WARNING')
+    logging.basicConfig(format=log_format, level=log_level)
 
 
 class Worker(object):
@@ -38,7 +49,10 @@ class Worker(object):
     def __init__(self, conf, loop=None):
         self.conf = conf
 
-        set_logger(self.conf)
+        log_level = getattr(self.conf, 'LOG_LEVEL', DEFAULT_LOG_LEVEL)
+        log_format = getattr(self.conf, 'LOG_FORMAT', DEFAULT_LOG_FORMAT)
+        set_logger(log_level, log_format)
+
         logging.info('Initialize application')
 
         logging.debug('Setup driver')
