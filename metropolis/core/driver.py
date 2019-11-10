@@ -98,5 +98,10 @@ class NatsDriver(object):
         logging.debug('Drain subscriptions')
 
         await self.nats.flush()
+        logging.debug('Flushed')
+
         await self.nats.drain()
+        logging.debug('Drained')
+
         await self.nats.close()
+        logging.debug('Closed')

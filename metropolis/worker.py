@@ -7,13 +7,14 @@ from contextlib import suppress
 import uvloop
 
 from metropolis.core.utils import get_module
-from metropolis.core.utils import simple_eventloop
 from metropolis.core.driver import NatsDriver
 
 
 # Worker constants
 WORKER_CONTROL_SIGNAL_START = 'START'
 WORKER_CONTROL_SIGNAL_STOP = 'STOP'
+
+WORKER_PENDING_AIOTASK_TIMEOUT = 10
 
 # Default configurations
 DEFAULT_LOG_LEVEL = 'WARNING'
@@ -104,10 +105,8 @@ class Worker(object):
         return self._loop.run_until_complete
 
     @asynccontextmanager
-    async def nats_driver(self, loop=None):
-        # remove condition for performance
-        loop = loop or self._loop
-        nats = await self._driver.get_connection(loop)
+    async def nats_driver(self):
+        nats = await self._driver.get_connection(self._loop)
 
         yield nats
 
@@ -184,7 +183,8 @@ class Worker(object):
                     f'[task={task.__class__.__name__}:{task.__hash__()}]'
                 ))
                 with suppress(asyncio.CancelledError):
-                    self._loop.run_until_complete(task)
+                    self._loop.run_until_complete(
+                        asyncio.wait_for(task, WORKER_PENDING_AIOTASK_TIMEOUT))
                     logging.debug(f'{task.__hash__()} [done={task.done()}]')
 
             logging.info('Stop - close eventloop')
@@ -202,13 +202,11 @@ class Worker(object):
             await nats.publish(name, payload)
 
     def request(self, name, payload):
-        with simple_eventloop() as loop:
-            response = loop.run_until_complete(
-                self.async_request(name, payload, loop))
-            return response
+        response = self._loop.run_until_complete(
+            self.async_request(name, payload, self._loop))
+        return response
 
     def publish(self, name, payload):
-        with simple_eventloop() as loop:
-            response = loop.run_until_complete(
-                self.async_publish(name, payload, loop))
-            return response
+        response = self._loop.run_until_complete(
+            self.async_publish(name, payload, self._loop))
+        return response
