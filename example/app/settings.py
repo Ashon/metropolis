@@ -12,7 +12,7 @@ NATS_URL = env.get('NATS_URL', 'nats://nats:4222')
 QUEUE_NAME = 'tasks'
 WORKER_NAME = 'worker'
 CONTROL_LIFECYCLE_ENABLED = True
-SERIALIZER_CLASS = 'nats_worker.core.serializer.JsonMessageSerializer'
+SERIALIZER_CLASS = 'metropolis.core.serializer.JsonMessageSerializer'
 
 # worker settings
 HEARTBEAT_INTERVAL = 5

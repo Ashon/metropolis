@@ -1,8 +1,4 @@
-import os
-import sys
-sys.path.append(os.getcwd()) # noqa E402
-
-from nats_worker.worker import Worker
+from metropolis import Worker
 import settings
 
 

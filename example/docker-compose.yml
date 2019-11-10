@@ -12,17 +12,16 @@ services:
     image: nats-worker
     build:
       context: .
-      dockerfile: example/Dockerfile
     environment:
       NATS_URL: nats://nats:4222
       LOG_LEVEL: DEBUG
     command: python app/worker.py
 
-  proxy:
+  gateway:
     image: nats-worker
     environment:
       NATS_URL: nats://nats:4222
       LOG_LEVEL: DEBUG
-    command: python app/proxy.py
+    command: python app/gateway.py
     ports:
     - 8888:8000
