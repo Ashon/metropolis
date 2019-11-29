@@ -2,23 +2,37 @@
 
 > Can we make `simple`, `scalable`, `observable`, `operable` service gateway?
 
+## Purpose
+
+### Cloud Native
+
+### Single Workload Unit
+
+### Service Discovery
+
+### Service Mesh
+
 ## Architecture Concept
 
 ``` txt
-+- Node-1 --+  +- Node-2 -+  +- Node-3 --+  +- Node-4 -+
-|           |  |          |  |           |  |          |
-| Worker-a  |  |          |  |           |  | Worker-d |
-| Worker-b  |  | Worker-c |  | Worker-a  |  | Worker-c |
-|    |      |  |    |     |  |    |      |  |    |     |
-|   NATS ========= NATS ======================= NATS   |
-|    |      |  |          |  |    |      |  |          |
-|  Gateway  |  |          |  |  Gateway  |  |          |
-|    |      |  |          |  |    |      |  |          |
-+--- | -----+  +----------+  +--- | -----+  +----------+
-     |                            |
-     +--------------+-------------+
-                    |
-                  Ingress
+  +- Cluster --------------------------------------------------+
+  |                                                            |
+  |  +- Node-1 --+  +- Node-2 -+  +- Node-3 --+  +- Node-4 -+  |
+  |  |           |  |          |  |           |  |          |  |
+  |  | Worker-a  |  |          |  |           |  | Worker-d |  |
+  |  | Worker-b  |  | Worker-c |  | Worker-a  |  | Worker-c |  |
+  |  |    |      |  |    |     |  |    |      |  |    |     |  |
+<======= NATS ========= NATS ======================= NATS =======>
+  |  |    |      |  |          |  |    |      |  |          |  |
+  |  |  Gateway  |  |          |  |  Gateway  |  |          |  |
+  |  |    |      |  |          |  |    |      |  |          |  |
+  |  +--- | -----+  +----------+  +--- | -----+  +----------+  |
+  |       |                            |                       |
+  |       +--------------+-------------+                       |
+  |                      |                                     |
+  |                   Ingress                                  |
+  +--------------------- | ------------------------------------+
+                         V
 ```
 
 ### Components
