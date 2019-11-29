@@ -11,8 +11,8 @@ from example.app import settings
 async def publish_msg(worker, name, payload):
     now = time.perf_counter()
     async with worker.nats_driver() as nats:
-        for i in range(100000):
-            _ = await nats.publish(name, payload)
+        for i in range(10000):
+            _ = await nats.request(name, payload)
             if i % 1000 == 0:
                 elapsed = time.perf_counter() - now
                 print(f'{1000 / elapsed:.3f} RPS ({i} msgs)')

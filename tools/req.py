@@ -11,7 +11,7 @@ from example.app import settings
 def publish_msg(worker, name, payload):
     now = time.perf_counter()
     for i in range(10000):
-        _ = worker.publish(name, payload)
+        _ = worker.request(name, payload)
         if i % 1000 == 0:
             elapsed = time.perf_counter() - now
             print(f'{1000 / elapsed:.3f} RPS ({i} msgs)')
