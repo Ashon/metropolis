@@ -20,6 +20,7 @@ class NatsDriver(object):
         await self.nats.connect(
             servers=self.urls,
             loop=loop,
+            io_loop=loop,
             error_cb=self.on_error,
             disconnected_cb=self.on_disconnected,
             closed_cb=self.on_closed,

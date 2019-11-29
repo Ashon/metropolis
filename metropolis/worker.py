@@ -151,7 +151,7 @@ class Worker(object):
                 # more complicated: self._driver.create_task
                 callback = self._driver.create_task_simple(task_fn)
 
-                subscription_id = await nats.subscribe(
+                subscription_id = await nats.subscribe_async(
                     task_spec['subject'], queue=task_spec['queue'], cb=callback)
 
                 logging.debug((
@@ -193,21 +193,21 @@ class Worker(object):
 
         logging.info('Bye')
 
-    async def async_request(self, name, payload, loop=None):
-        async with self.nats_driver(loop) as nats:
+    async def async_request(self, name, payload):
+        async with self.nats_driver() as nats:
             res = await nats.request(name, payload)
             return res
 
-    async def async_publish(self, name, payload, loop=None):
-        async with self.nats_driver(loop) as nats:
+    async def async_publish(self, name, payload):
+        async with self.nats_driver() as nats:
             await nats.publish(name, payload)
 
     def request(self, name, payload):
         response = self._loop.run_until_complete(
-            self.async_request(name, payload, self._loop))
+            self.async_request(name, payload))
         return response
 
     def publish(self, name, payload):
         response = self._loop.run_until_complete(
-            self.async_publish(name, payload, self._loop))
+            self.async_publish(name, payload))
         return response
