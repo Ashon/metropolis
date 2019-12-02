@@ -14,6 +14,7 @@ from metropolis.core.driver import NatsDriver
 WORKER_CONTROL_SIGNAL_START = 'START'
 WORKER_CONTROL_SIGNAL_STOP = 'STOP'
 
+WORKER_TASK_TIMEOUT = 30
 WORKER_PENDING_AIOTASK_TIMEOUT = 10
 
 # Default configurations
@@ -195,12 +196,12 @@ class Worker(object):
 
     async def async_request(self, name, payload):
         async with self.nats_driver() as nats:
-            res = await nats.request(name, payload)
+            res = await nats.request(name, payload, timeout=WORKER_TASK_TIMEOUT)
             return res
 
     async def async_publish(self, name, payload):
         async with self.nats_driver() as nats:
-            await nats.publish(name, payload)
+            await nats.publish(name, payload, timeout=WORKER_TASK_TIMEOUT)
 
     def request(self, name, payload):
         response = self._loop.run_until_complete(
