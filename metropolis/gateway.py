@@ -1,23 +1,15 @@
 from sanic import Sanic
 from sanic.response import json
 
-from metropolis.core.driver import NatsDriver
-from metropolis.core.utils import get_module
+from metropolis.core.executor import Executor
 
 
-class Gateway(object):
-    conf = None
+class Gateway(Executor):
     app = None
-    driver = None
     nats = None
 
-    def __init__(self, settings):
-        self.conf = settings
-
-        _, serializer = get_module(self.conf.SERIALIZER_CLASS)
-        self.driver = NatsDriver(
-            urls=self.conf.NATS_URL.split(','),
-            serializer=serializer)
+    def __init__(self, name, config):
+        super(Gateway, self).__init__(name, config)
 
         self.app = Sanic()
         self.app.listener('before_server_start')(self.setup)
@@ -28,7 +20,7 @@ class Gateway(object):
         """ Bind worker with sanic application eventloop
         """
 
-        self.nats = await self.driver.get_connection(loop)
+        self.nats = await self._driver.get_connection(loop)
 
     def serialize_request_to_nats_message(self, request, path: str) -> (str, str):
         """Resolve path to nats topic, messages
@@ -54,6 +46,7 @@ class Gateway(object):
         return (nats_route, request.args)
 
     async def get_routes(self, request):
+        # TODO: Returns routemap from nats 'routez'
         self.nats
         return json({})
 
@@ -61,10 +54,10 @@ class Gateway(object):
         (route, body) = self.serialize_request_to_nats_message(request, path)
 
         # data transport
-        message = self.driver.serializer.serialize(body)
+        message = self._driver.serializer.serialize(body)
         worker_response = await self.nats.request(route, message)
 
-        worker_response_dict = self.driver.serializer.deserialize(
+        worker_response_dict = self._driver.serializer.deserialize(
             worker_response.data)
         response_data = worker_response_dict['data']
 

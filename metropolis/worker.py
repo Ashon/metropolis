@@ -7,12 +7,12 @@ from contextlib import suppress
 import uvloop
 
 from metropolis.core.utils import get_module
-from metropolis.core.driver import NatsDriver
+from metropolis.core.executor import Executor
 
 
 # Worker constants
-WORKER_CONTROL_SIGNAL_START = 'START'
-WORKER_CONTROL_SIGNAL_STOP = 'STOP'
+WORKER_CONTROL_SIGNAL_START = '__START__'
+WORKER_CONTROL_SIGNAL_STOP = '__STOP__'
 
 WORKER_TASK_TIMEOUT = 30
 WORKER_PENDING_AIOTASK_TIMEOUT = 10
@@ -27,59 +27,52 @@ DEFAULT_LOG_FORMAT = (
     ' %(message)s'
 )
 
+DEFAULT_SERIALIZER_CLASS = 'metropolis.core.serializer.DefaultMessageSerializer'
+DEFAULT_NATS_URL = 'nats://localhost:4222'
+DEFAULT_UVLOOP_ENABLED = True
 
-def set_logger(log_level, log_format):
-    log_level = getattr(logging, log_level, 'WARNING')
-    logging.basicConfig(format=log_format, level=log_level)
 
+class Worker(Executor):
+    config = None
 
-class Worker(object):
-    conf = None
+    # worker object's eventloop
+    _uvloop_enalbed = None
+    _loop = None
+    # queue for worker lifecycle control
+    _queue = None
 
     # nats driver
     _driver = None
 
-    # worker object's eventloop
-    _loop = None
-
-    # aio queue for worker lifecycle control
-    _queue = None
-
     # worker tasks
     _tasks = []
 
-    def __init__(self, conf, loop=None):
-        self.conf = conf
+    def __init__(self, name, config=None):
+        """ Initialize worker
 
-        log_level = getattr(self.conf, 'LOG_LEVEL', DEFAULT_LOG_LEVEL)
-        log_format = getattr(self.conf, 'LOG_FORMAT', DEFAULT_LOG_FORMAT)
-        set_logger(log_level, log_format)
+        Build Configuration with args and initialize components
 
-        logging.info('Initialize application')
-
-        logging.debug('Setup driver')
-        _, serializer = get_module(conf.SERIALIZER_CLASS)
-        self._driver = NatsDriver(
-            urls=self.conf.NATS_URL.split(','),
-            serializer=serializer)
-
-        logging.debug('Setup uvloop')
-        if self.conf.UVLOOP_ENABLED:
-            uvloop.install()
-
-        # initialize TASK field
-        if not getattr(self.conf, 'TASKS', False):
-            setattr(self.conf, 'TASKS', [])
+        Bootsteps.
+            1. build configuration from constructor args (Executor init phase)
+            2. initialize components (Worker init phase)
+        """
+        super(Worker, self).__init__(name, config)
 
         logging.debug('Prepare eventloop')
-        self._loop = loop or asyncio.get_event_loop()
+        if self.config['uvloop_enabled']:
+            asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+            self._loop = uvloop.new_event_loop()
+        else:
+            self._loop = asyncio.get_event_loop()
 
-        logging.debug('Generate worker')
-        self._queue = asyncio.Queue()
+        # lifecycle controller
+        logging.debug('Lifecycle controller')
+        self._queue = asyncio.Queue(loop=self._loop)
 
         logging.debug('Set signal handler')
         # stop by message
         self._handle_signal = self.create_signal_handler()
+
         # stop by interrupt
         signal.signal(signal.SIGINT, self.stop)
         signal.signal(signal.SIGTERM, self.stop)
@@ -124,7 +117,7 @@ class Worker(object):
         """
 
         def worker_task(task_fn):
-            self.conf.TASKS.append({
+            self.config['tasks'].append({
                 'subject': subject,
                 'queue': queue,
                 'task': task_fn
@@ -136,14 +129,13 @@ class Worker(object):
 
     async def _run_in_loop(self):
         async with self.nats_driver() as nats:
-
             # Setup worker lifecycle handler
-            if self.conf.CONTROL_LIFECYCLE_ENABLED:
+            if self.config['control_lifecycle']:
                 await nats.subscribe(
-                    self.conf.WORKER_NAME, cb=self._handle_signal)
+                    self.name, cb=self._handle_signal)
 
             # Register tasks
-            for task_spec in self.conf.TASKS:
+            for task_spec in self.config['tasks']:
                 if type(task_spec) is str:
                     _, task_fn = get_module(task_spec['task'])
                 else:
