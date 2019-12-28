@@ -2,7 +2,7 @@ from metropolis import Worker
 import settings
 
 
-worker = Worker(settings)
+worker = Worker(__name__, settings)
 
 
 @worker.task(subject='foo.get', queue='worker')
