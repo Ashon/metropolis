@@ -20,7 +20,7 @@ async def publish_msg(worker, name, payload):
 
 
 def main(name):
-    worker = Worker(settings)
+    worker = Worker(__name__, settings)
     payload = b'{"data":"hello"}'
 
     worker.run_until_complete(
