@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import signal
+import sys
 from contextlib import asynccontextmanager
 from contextlib import suppress
 
@@ -8,6 +9,7 @@ import uvloop
 
 from metropolis.core.utils import get_module
 from metropolis.core.executor import Executor
+from metropolis.core.driver import WORKER_STATE_CONNECTED
 
 
 # Worker constants
@@ -81,7 +83,15 @@ class Worker(Executor):
         """Send stop signal to worker lifecycle handler queue
         """
 
-        self._queue.put_nowait(WORKER_CONTROL_SIGNAL_STOP)
+        try:
+            if self._driver.state == WORKER_STATE_CONNECTED:
+                logging.debug(f'Send stop signal [signal={WORKER_CONTROL_SIGNAL_STOP}]')
+                self._queue.put_nowait(WORKER_CONTROL_SIGNAL_STOP)
+            else:
+                self._finalize()
+
+        except Exception:
+            sys.exit(255)
 
     def create_signal_handler(self):
         """Return nats message handler function stopping worker.
@@ -160,6 +170,21 @@ class Worker(Executor):
             while signal != WORKER_CONTROL_SIGNAL_STOP:
                 signal = await self._queue.get()
 
+    def _finalize(self):
+        logging.info('Stop - cancel pending eventloop tasks')
+        pending_tasks = asyncio.Task.all_tasks()
+        for task in pending_tasks:
+            logging.debug((
+                f'[task={task.__class__.__name__}:{task.__hash__()}]'
+            ))
+            with suppress(asyncio.CancelledError):
+                self._loop.run_until_complete(
+                    asyncio.wait_for(task, WORKER_PENDING_AIOTASK_TIMEOUT))
+                logging.debug(f'{task.__hash__()} [done={task.done()}]')
+
+        logging.info('Stop - close eventloop')
+        self._loop.close()
+
     def run(self):
         try:
             logging.info('Start - run worker')
@@ -170,19 +195,7 @@ class Worker(Executor):
             self.stop()
 
         finally:
-            logging.info('Stop - cancel pending eventloop tasks')
-            pending_tasks = asyncio.Task.all_tasks()
-            for task in pending_tasks:
-                logging.debug((
-                    f'[task={task.__class__.__name__}:{task.__hash__()}]'
-                ))
-                with suppress(asyncio.CancelledError):
-                    self._loop.run_until_complete(
-                        asyncio.wait_for(task, WORKER_PENDING_AIOTASK_TIMEOUT))
-                    logging.debug(f'{task.__hash__()} [done={task.done()}]')
-
-            logging.info('Stop - close eventloop')
-            self._loop.close()
+            self._finalize()
 
         logging.info('Bye')
 

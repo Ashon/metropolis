@@ -6,9 +6,16 @@ from nats.aio.client import Client
 from metropolis.core.utils import InterruptBumper
 
 
+WORKER_STATE_CONNECTED = 'connected'
+WORKER_STATE_DISCONNECTED = 'connected'
+WORKER_STATE_ERROR = 'error'
+WORKER_STATE_CLOSED = 'closed'
+
+
 class NatsDriver(object):
     nats = None
     serializer = None
+    state = None
 
     def __init__(self, urls, serializer):
         self.urls = urls
@@ -21,29 +28,43 @@ class NatsDriver(object):
             servers=self.urls,
             loop=loop,
             io_loop=loop,
-            error_cb=self.on_error,
-            disconnected_cb=self.on_disconnected,
-            closed_cb=self.on_closed,
-            reconnected_cb=self.on_reconnected
+            error_cb=self.get_error_cb(),
+            disconnected_cb=self.get_disconnected_cb(),
+            closed_cb=self.get_closed_cb(),
+            reconnected_cb=self.get_reconnected_cb()
         )
+
+        self.state = WORKER_STATE_CONNECTED
 
         return self.nats
 
-    @staticmethod
-    async def on_error(exception):
-        logging.error(f'{exception}')
+    def get_error_cb(self):
+        async def on_error(exception):
+            self.state = WORKER_STATE_ERROR
+            logging.error(f'{exception} {self.urls}')
 
-    @staticmethod
-    async def on_disconnected():
-        logging.info(f'disconnected')
+        return on_error
 
-    @staticmethod
-    async def on_closed():
-        logging.info(f'closed')
+    def get_disconnected_cb(self):
+        async def on_disconnected():
+            self.state = WORKER_STATE_DISCONNECTED
+            logging.info(f'disconnected')
 
-    @staticmethod
-    async def on_reconnected():
-        logging.info(f'reconnected')
+        return on_disconnected
+
+    def get_closed_cb(self):
+        async def on_closed():
+            self.state = WORKER_STATE_DISCONNECTED
+            logging.info(f'closed')
+
+        return on_closed
+
+    def get_reconnected_cb(self):
+        async def on_reconnected():
+            self.state = WORKER_STATE_CONNECTED
+            logging.info(f'reconnected')
+
+        return on_reconnected
 
     async def execute(self, task_fn, msg):
         logging.info((
