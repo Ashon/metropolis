@@ -2,11 +2,11 @@ import setuptools
 
 setuptools.setup(
     name="metropolis",
-    version="0.1.4",
+    version=open('version').read().strip(),
     license='MIT',
     author="ashon lee",
     author_email="ashon8813@gmail.com",
-    description="Microservice gateway using Nats",
+    description="NATS message based microservice framework",
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     url="https://github.com/ashon/metropolis",
