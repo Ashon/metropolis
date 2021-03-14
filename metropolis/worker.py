@@ -60,6 +60,9 @@ class Worker(Executor):
         """
         super(Worker, self).__init__(name, config)
 
+        # worker queue name in nats
+        self.queue_name = 'worker'
+
         logging.debug('Prepare eventloop')
         if self.config['uvloop_enabled']:
             asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
@@ -117,20 +120,21 @@ class Worker(Executor):
         # Gracefully unsubscribe the subscription
         await self._driver.close()
 
-    def task(self, subject, queue):
+    def task(self, action, schema):
         """Register task decorator
 
         Example:
-            @worker.task(subject='foo.get', queue='worker')
+            @worker.task('get')
             def mytask(data, *args, **kwargs):
                 return data[0][::-1]
         """
 
         def worker_task(task_fn):
             self.config['tasks'].append({
-                'subject': subject,
-                'queue': queue,
-                'task': task_fn
+                'subject': f'{self.name}.{action}',
+                'queue': self.queue_name,
+                'task': task_fn,
+                'schema': schema
             })
 
             return task_fn

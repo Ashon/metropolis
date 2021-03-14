@@ -67,13 +67,11 @@ class NatsDriver(object):
         return on_reconnected
 
     async def execute(self, task_fn, msg):
-        logging.info((
-            'Received message. '
-            f'[subject={msg.subject}][fn={task_fn.__name__}]'
-            f'[from={msg.reply}]'
-        ))
+        """ Execute worker task
 
-        now = time.perf_counter()
+        Deserialize data and execute function.
+        """
+
         data = self.serializer.deserialize(msg.data)
 
         try:
@@ -92,6 +90,15 @@ class NatsDriver(object):
 
             await self.nats.publish(msg.reply, response_data)
 
+    async def execute_with_profile(self, task_fn, msg):
+        logging.info((
+            'Received message. '
+            f'[subject={msg.subject}][fn={task_fn.__name__}]'
+            f'[from={msg.reply}]'
+        ))
+
+        now = time.perf_counter()
+        await self.execute(task_fn, msg)
         elapsed = (time.perf_counter() - now) * 1000
 
         logging.info((
@@ -104,11 +111,20 @@ class NatsDriver(object):
         logging.debug(f'Create task [task_fn={task_fn.__name__}]')
 
         async def run_task(msg):
-            await self.execute(task_fn, msg)
+            # more throughputs
+            # await self.execute(task_fn, msg)
+
+            # profiles
+            await self.execute_with_profile(task_fn, msg)
 
         return run_task
 
     def create_task(self, task_fn):
+        """ Create durable task
+
+        It considers nats' status and keep task's fails with interrupt bumper.
+        """
+
         logging.debug(f'Create task [task_fn={task_fn.__name__}]')
 
         async def run_task(msg):
@@ -118,7 +134,11 @@ class NatsDriver(object):
 
             try:
                 with InterruptBumper(attempts=3):
-                    self.execute(task_fn, msg)
+                    # more throughputs
+                    # await self.execute(task_fn, msg)
+
+                    # profiles
+                    await self.execute_with_profile(task_fn, msg)
 
             except KeyboardInterrupt:
                 await self.nats.publish(

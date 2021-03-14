@@ -2,15 +2,19 @@ from metropolis import Worker
 import settings
 
 
-worker = Worker(__name__, settings)
+worker = Worker('foo', settings)
 
 
-@worker.task(subject='foo.get', queue='worker')
-def mytask(data, *args, **kwargs):
+class Schema(object):
+    data: str
+
+
+@worker.task('get', schema=Schema)
+def mytask(request, *args, **kwargs):
     """Simple task which returns reverse string
     """
 
-    return data[0][::-1]
+    return request.data['data'][::-1]
 
 
 worker.run()
