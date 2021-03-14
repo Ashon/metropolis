@@ -1,7 +1,6 @@
 # Metropolis
 
-- CNCF의 `NATS` Messge를 사용한 메시징 기반의 마이크로서비스 프레임워크
-- Written in `Python`
+Scalable and distributed API Gateway using Nats messaging.
 
 ## Purpose
 
@@ -16,22 +15,6 @@
 보고, 서비스를 구동해 보면서 `Cloud Native`환경에서 서비스들을 좀 더 효율적으로 관리하고
 개발해 나갈 수 있는 방법을 제시해 본다.
 
-### `CNCF` ecosystems
-
-#### Orchestration - Kubernetes
-
-컨테이너화 된 워크로드들을 분산 환경에서 효율적으로 관리하기 위한 오케스트레이터 프로젝트
-
-#### Messaging Bus - Nats
-
-Text 기반의 메시지 버스 프로젝트
-
-#### Metric - Prometheus
-
-#### Logging - Fluentd, Elastic Search
-
-#### Tracing
-
 ## Architecture Concept
 
 ### Structure
@@ -44,8 +27,8 @@ Text 기반의 메시지 버스 프로젝트
   |  | Worker-a  |  |          |  |           |  | Worker-d |  |
   |  | Worker-b  |  | Worker-c |  | Worker-a  |  | Worker-c |  |
   |  |    |      |  |    |     |  |    |      |  |    |     |  |
-<======= NATS ========= NATS ======================= NATS =======>
-  |  |    |      |  |          |  |    |      |  |          |  |
+<======= NATS ========= NATS ======================= NATS =======> Other
+  |  |    |      |  |          |  |    |      |  |          |  |   Cluster
   |  |  Gateway  |  |          |  |  Gateway  |  |          |  |
   |  |    |      |  |          |  |    |      |  |          |  |
   |  +--- | -----+  +----------+  +--- | -----+  +----------+  |
@@ -84,10 +67,11 @@ $ pip install metropolis
 from metropolis import Worker
 
 
-worker = Worker(nats='nats://localhost:4222')
+# worker will reacts gateway path '/foo'
+worker = Worker('foo', nats='nats://localhost:4222')
 
 
-@worker.task(subject='foo.bar', queue='worker')
+@worker.task('get')  # HTTP Method GET
 def mytask(data, *args, **kwargs):
     """Simple task which returns reverse string
     """
@@ -97,6 +81,8 @@ def mytask(data, *args, **kwargs):
 
 worker.run()
 ```
+
+`Worker` is ready for `/foo?data=!@#`
 
 ### Define Gateway
 

@@ -1,3 +1,5 @@
+from typing import Tuple
+
 from sanic import Sanic
 from sanic.response import json
 
@@ -13,6 +15,7 @@ class Gateway(Executor):
 
         self.app = Sanic()
         self.app.listener('before_server_start')(self.setup)
+        self.app.listener('after_server_stop')(self.stop)
         self.app.route('/_routes/', methods=['GET'])(self.get_routes)
         self.app.route('/<path:[^/].*?>', methods=['GET'])(self.resolve_message)
 
@@ -22,7 +25,11 @@ class Gateway(Executor):
 
         self.nats = await self._driver.get_connection(loop)
 
-    def serialize_request_to_nats_message(self, request, path: str) -> (str, str):
+    async def stop(self, app, loop):
+        self.nats = await self._driver.close()
+
+    def serialize_request_to_nats_message(self, request,
+                                          path: str) -> Tuple[str, str]:
         """Resolve path to nats topic, messages
 
         Request path convention
@@ -46,7 +53,7 @@ class Gateway(Executor):
         return (nats_route, request.args)
 
     async def get_routes(self, request):
-        # TODO: Returns routemap from nats 'routez'
+        # TODO: Returns routemap from nats 'connz?subs=1'
         self.nats
         return json({})
 
